@@ -149,7 +149,7 @@ def main():
     if run('tar xf %s' % tmp_tarball) != 0:
         error('failed to uncompress the tarball')
 
-    # seahub_dir = os.path.join(tmpdir, 'seahub-%s' % version)
+    seahub_dir = os.path.join(tmpdir, 'seahub-%s' % version)
     # if run('./i18n.sh compile-all', cwd=seahub_dir) != 0:
     #     error('failed to compile messages')
 

@@ -76,6 +76,10 @@ function run_tests() {
             cat "${logfile}"
             echo
         done
+        for logfile in /var/log/nginx/*; do
+            echo -e "\nLog file $logfile:\n"
+            cat "${logfile}"
+        done
     fi
     exit $rvalue
 }

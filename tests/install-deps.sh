@@ -26,6 +26,8 @@ server {
         client_max_body_size 0;
         proxy_connect_timeout  36000s;
         proxy_read_timeout  36000s;
+        access_log      /var/log/nginx/seafile.access.log;
+        error_log       /var/log/nginx/seafile.error.log;
     }
 
 }

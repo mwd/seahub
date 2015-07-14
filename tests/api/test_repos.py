@@ -182,6 +182,5 @@ class ReposApiTest(ApiTestBase):
         headers = {
             'Seafile-Repo-Token': sync_token
         }
-        url = urljoin(SEAFILE_BASE_URL,
-                      'repo/%s/permission-check/?op=upload' % repo_id)
+        url = urljoin(SEAFILE_BASE_URL, 'repo/%s/permission-check/' % repo_id) + '?op=upload'
         self.get(url, use_token=False, headers=headers, **kwargs)

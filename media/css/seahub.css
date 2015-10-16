@@ -3727,6 +3727,7 @@ img.thumbnail {
     height:20px;
     border:1px solid #ccc;
     background:#fff;
+    float:left;
 }
 .grid-view-btn {
     border-left:none;

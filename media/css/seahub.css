@@ -1867,6 +1867,9 @@ textarea:-moz-placeholder {/* for FF */
 .repo-file-list th {
     padding-top:20px;
 }
+.repo-file-list .name {
+    padding-right:30px;
+}
 #repo-file-list .fixed-hd {
     position:fixed;
     width:950px;
@@ -3712,10 +3715,10 @@ img.thumbnail {
 }
 
 /* view mode */
-.view-mode-switch {
+.view-mode {
     margin-right:12px;
 }
-.view-mode-switch .active {
+.view-mode .active {
     background:#ccc;
 }
 .list-view-btn,
@@ -3731,9 +3734,8 @@ img.thumbnail {
 .grid-item {
     height:148px;
     width:148px;
-    position:relative;
 }
-.img-container {
+.grid-img-container {
     width:100px;
     height:100px;
     line-height:98px;
@@ -3741,7 +3743,7 @@ img.thumbnail {
     border-radius:5px;
     text-align:center;
 }
-.img-container img {
+.grid-img-container img {
     max-height:96px;
     max-width:96px;
 }
@@ -3757,7 +3759,7 @@ img.thumbnail {
     display:block;
     line-height:1.1em;
 }
-.direct-dld-btn {
+.grid-dld-btn {
     position:absolute;
     right:24px;
     top:12px;

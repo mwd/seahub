@@ -3710,3 +3710,59 @@ img.thumbnail {
 .web-setting-form .submit {
     margin-right:5px;
 }
+
+/* view mode */
+.view-mode-switch {
+    margin-right:12px;
+}
+.view-mode-switch .active {
+    background:#ccc;
+}
+.list-view-btn,
+.grid-view-btn {
+    padding:4px 6px;
+    height:20px;
+    border:1px solid #ccc;
+    background:#fff;
+}
+.grid-view-btn {
+    border-left:none;
+}
+.grid-item {
+    height:148px;
+    width:148px;
+    position:relative;
+}
+.img-container {
+    width:100px;
+    height:100px;
+    line-height:98px;
+    margin:12px auto 8px;
+    border-radius:5px;
+    text-align:center;
+}
+.img-container img {
+    max-height:96px;
+    max-width:96px;
+}
+.grid-link-container {
+    padding:0 22px;
+    text-align:center;
+    height:2.2em;
+    width:104px;
+    opacity:0;
+}
+.grid-link{
+    color:#333;
+    display:block;
+    line-height:1.1em;
+}
+.direct-dld-btn {
+    position:absolute;
+    right:24px;
+    top:12px;
+    border:1px solid #eee;
+    border-radius:5px;
+    background:#fff;
+    padding:2px 7px;
+}

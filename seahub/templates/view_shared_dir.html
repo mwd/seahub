@@ -177,18 +177,6 @@ $('.grid-link-container', grid).each(function() {
         $grid_link.text($grid_link.text().replace(/(\s)*(.)(\.\.\.)?$/, "..."));
     };
 }).css('opacity', 1);
-$('.grid-picture', grid).each(function() {
-    var img = $(this);
-    var img_width = img_height = '96px';
-    $("<img/>").attr("src", $(img).attr("src")).load(function() {
-        if(this.width >= this.height){
-            $(img).css("width", img_width).css("height", "auto");
-        }
-        else{
-            $(img).css("width", 'auto').css("height", img_height);
-        }
-    });
-});
 $('.grid-item', grid).hover(function() {
     $(this).children('.grid-dld-btn').removeClass('vh');
     $(this).children('.grid-img-container').css('background', '#f8f8f8');

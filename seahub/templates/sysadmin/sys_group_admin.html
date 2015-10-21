@@ -4,7 +4,10 @@
 {% block cur_groups %}tab-cur{% endblock %}
 
 {% block right_panel %}
-<h3 class="hd">{% trans "All Groups" %}</h3>
+<div class="ovhd hd">
+    <h3 class="fleft">{% trans "All Groups"%}</h3>
+    <button id="export-groups" class="fright">{% trans "Export Excel" %}</button>
+</div>
 
 {% if groups %}
 <table>
@@ -45,6 +48,8 @@ addConfirmTo($('.rm-grp'), {
     'con': "{% trans "Are you sure you want to delete %s ?" %}",
     'post': true
 });
+$("#export-groups").click(function() {
+    location.href = "{% url 'sys_group_admin_export_excel' %}";
+});
 </script>
 {% endblock %}
- 

@@ -5,17 +5,16 @@ define([
     'common',
     'file-tree',
     'app/views/share',
-    'app/views/folder-perm'
-], function($, _, Backbone, Common, FileTree, ShareView, FolderPermView) {
+], function($, _, Backbone, Common, FileTree, ShareView) {
     'use strict';
 
     app = app || {};
     app.globalState = app.globalState || {};
 
-    var DirentView = Backbone.View.extend({
-        tagName: 'tr',
+    var DirentGridView = Backbone.View.extend({
+        tagName: 'li',
 
-        template: _.template($('#dirent-tmpl').html()),
+        template: _.template($('#grid-view').html()),
         renameTemplate: _.template($("#rename-form-template").html()),
         mvcpTemplate: _.template($("#mvcp-form-template").html()),
         mvProgressTemplate: _.template($("#mv-progress-popup-template").html()),
@@ -25,7 +24,7 @@ define([
             this.dir = this.dirView.dir;
 
             this.listenTo(this.model, "change", this.render);
-            this.listenTo(this.model, 'remove', this.remove); // for multi dirents: delete, mv
+            this.listenTo(this.model, 'remove', this.remove); // for multi dirents: delete, mv       
         },
 
         render: function() {
@@ -43,122 +42,51 @@ define([
                 can_generate_shared_link: app.pageOptions.can_generate_shared_link,
                 is_pro: is_pro,
                 repo_encrypted: dir.encrypted
-            }));
+            })).addClass('fleft grid-item');
             this.$('.file-locked-icon').attr('title', gettext("locked by {placeholder}").replace('{placeholder}', this.model.get('lock_owner_name')));
-
             return this;
         },
-
         events: {
             'mouseenter': 'highlight',
             'mouseleave': 'rmHighlight',
+            'mousedown .grid-img-container': 'showPopupMenu',
+            'click .grid-img-container': 'multiChoose',
             'click .select': 'select',
-            'click .file-star': 'starFile',
             'click .dir-link': 'visitDir',
-            'click .more-op-icon': 'togglePopup',
             'click .share': 'share',
             'click .delete': 'del', // 'delete' is a preserve word
-            'click .rename': 'rename',
             'click .mv': 'mvcp',
-            'click .cp': 'mvcp',
-            'click .set-folder-permission': 'setFolderPerm',
-            'click .lock-file': 'lockFile',
-            'click .unlock-file': 'unlockFile'
+            'click .cp': 'mvcp'
         },
 
         highlight: function() {
-            if (!$('.hidden-op:visible').length && !$('#rename-form').length) {
-                this.$el.addClass('hl').find('.repo-file-op').removeClass('vh');
-            }
+            this.$('.grid-img-inner-container').addClass('hl');
         },
 
         rmHighlight: function() {
-            if (!$('.hidden-op:visible').length && !$('#rename-form').length) {
-                this.$el.removeClass('hl').find('.repo-file-op').addClass('vh');
-            }
+            this.$('.grid-img-inner-container').removeClass('hl');
         },
 
-        select: function () {
-            var checkbox = this.$('.checkbox');
-            var checkbox_index = checkbox.closest('tr').index();
-            checkbox.toggleClass('checkbox-checked');
-            if (checkbox.hasClass('checkbox-checked')) {
-                this.model.set({'selected':true}, {silent:true}); // do not trigger the 'change' event.
-            } else {
-                this.model.set({'selected':false}, {silent:true});
-            }
+        showPopupMenu: function(e) {
+            e = e || window.event;   
+            $('.grid-hidden-op').hide();
+            if (e.which == 3 && this.dirView.$('.grid-item .grid-img-container.hl').length == 0) {
+                this.$('.grid-hidden-op').css({
+                    'left': e.pageX || e.clientX + document.body.scroolLeft,
+                    'top': e.pageY || e.clientY + document.body.scrollTop
+                }).show();
+            };
+        },
 
+        multiChoose: function(e) {
+            var index = this.$el.index();
             var dirView = this.dirView;
-            dirView.$('.grid-item').eq(checkbox_index).children('.grid-img-container').toggleClass('hl');
-            var $dirents_op = dirView.$('#multi-dirents-op');
-            var toggle_all_checkbox = dirView.$('th .checkbox');
-            var checked_num = dirView.$('tr:gt(0) .checkbox-checked').length;
-            if (checked_num > 0) {
-                $dirents_op.css({'display':'inline'});
-            } else {
-                $dirents_op.hide();
-            }
-            if (checked_num == dirView.$('tr:gt(0)').length) {
-                toggle_all_checkbox.addClass('checkbox-checked');
-            } else {
-                toggle_all_checkbox.removeClass('checkbox-checked');
-            }
-        },
-
-        starFile: function() {
-            var _this = this;
-            var dir = this.dirView.dir;
-            var starred = this.model.get('starred');
-            var options = { repo_id: dir.repo_id };
-            options.name = starred ? 'unstar_file' : 'star_file';
-            var filePath = Common.pathJoin([dir.path, this.model.get('obj_name')]);
-            var url = Common.getUrl(options) + '?file=' + encodeURIComponent(filePath);
-            $.ajax({
-                url: url,
-                dataType: 'json',
-                cache: false,
-                success: function () {
-                    if (starred) {
-                        _this.model.set({'starred':false});
-                    } else {
-                        _this.model.set({'starred':true});
-                    }
-                },
-                error: function (xhr) {
-                    Common.ajaxErrorHandler(xhr);
-                }
-            });
-        },
-
-        visitDir: function () { // todo
-            // show 'loading'
-            this.$('.dirent-icon img').attr({
-                'src': app.config.mediaUrl + 'img/loading-icon.gif',
-                'alt':''
-            });
-            // empty all models
-            this.dirView.dir.reset();
-            // update url & dirents
-            var dir_url = this.$('.dir-link').attr("href");
-            app.router.navigate(dir_url, {trigger: true}); // offer an url fragment
-            return false;
-        },
-
-        togglePopup: function () {
-            var icon = this.$('.more-op-icon'),
-                popup = this.$('.hidden-op');
-
-            if (popup.hasClass('hide')) { // the popup is not shown
-                popup.css({'left': icon.position().left});
-                if (icon.offset().top + popup.height() <= $('#main').offset().top + $('#main').height()) {
-                    // below the icon
-                    popup.css('top', icon.position().top + icon.height() + 3);
-                } else {
-                    popup.css('bottom', icon.parent().outerHeight() - icon.position().top + 3);
-                }
-                popup.removeClass('hide');
-            } else {
-                popup.addClass('hide');
+            if (e.which == 1 && dirView.$multi_choose == true) {
+                dirView.$('td.select').eq(index).click();
+            } else if (e.which == 1 && dirView.$multi_choose == false) {
+                dirView.$('td.select .checkbox-checked').click();
+                dirView.$('td.select').eq(index).click();
+                return false;
             }
         },
 
@@ -208,99 +136,7 @@ define([
             return false;
         },
 
-        rename: function() {
-            var is_dir = this.model.get('is_dir');
-            var dirent_name = this.model.get('obj_name');
-
-            var form = $(this.renameTemplate({
-                dirent_name: dirent_name
-            }));
-
-            var $name = this.$('.dirent-name'),
-                $op = this.$('.dirent-op'),
-                $td = $name.closest('td');
-            $td.attr('colspan', 2).css({
-                'width': $name.width() + $op.outerWidth(),
-                'height': $name.height()
-            }).append(form);
-            $op.hide();
-            $name.hide();
-
-            this.$('.hidden-op').addClass('hide');
-
-            var cancelRename = function() {
-                form.remove();
-                $op.show();
-                $name.show();
-                $td.attr('colspan', 1).css({
-                    'width': $name.width()
-                });
-                return false; // stop bubbling (to 'doc click to hide .hidden-op')
-            };
-            $('.cancel', form).click(cancelRename);
-
-            var form_id = form.attr('id');
-            var _this = this;
-            var dir = this.dirView.dir;
-            form.submit(function() {
-                var new_name = $.trim($('[name="newname"]', form).val());
-                if (!new_name) {
-                    return false;
-                }
-                if (new_name == dirent_name) {
-                    cancelRename();
-                    return false;
-                }
-                var post_data = {
-                    'oldname': dirent_name,
-                    'newname': new_name
-                };
-                var post_url = Common.getUrl({
-                    name: is_dir ? 'rename_dir' : 'rename_file',
-                    repo_id: dir.repo_id
-                }) + '?parent_dir=' + encodeURIComponent(dir.path);
-                var after_op_success = function (data) {
-                    var renamed_dirent_data = {
-                        'obj_name': data['newname'],
-                        'last_modified': new Date().getTime()/1000,
-                        'last_update': gettext("Just now")
-                    };
-                    if (!is_dir) {
-                        $.extend(renamed_dirent_data, {
-                            'starred': false
-                        });
-                    }
-                    $.modal.close();
-                    _this.model.set(renamed_dirent_data); // it will trigger 'change' event
-                };
-                var after_op_error = function(xhr) {
-                    var err_msg;
-                    if (xhr.responseText) {
-                        err_msg = $.parseJSON(xhr.responseText).error;
-                    } else {
-                        err_msg = gettext("Failed. Please check the network.");
-                    }
-                    Common.feedback(err_msg, 'error');
-                    Common.enableButton(submit_btn);
-                };
-
-                var submit_btn = $('[type="submit"]', form);
-                Common.disableButton(submit_btn);
-                $.ajax({
-                    url: post_url,
-                    type: 'POST',
-                    dataType: 'json',
-                    beforeSend: Common.prepareCSRFToken,
-                    data: post_data,
-                    success: after_op_success,
-                    error: after_op_error
-                });
-                return false;
-            });
-            return false;
-        },
-
-        mvcp: function(event) {
+         mvcp: function(event) {
             var dir = this.dir;
             var el = event.target || event.srcElement,
                 op_type = $(el).hasClass('mv') ? 'mv' : 'cp',
@@ -330,6 +166,7 @@ define([
             }
 
             var dirent = this.$el;
+            var dirent_list = this.dirView.$('.repo-file-list tr').eq(this.$el.index()+1);
             var _this = this;
             form.submit(function() {
                 var form = $(this),
@@ -366,7 +203,8 @@ define([
                     var msg = data['msg'];
                     if (!data['task_id']) { // no progress
                         if (op == 'mv') {
-                            dirent.remove();
+                            // dirent.remove();
+                            dirent_list.remove();
                         }
                         Common.feedback(msg, 'success');
                     } else {
@@ -407,6 +245,7 @@ define([
                                         $.modal.close();
                                         if (op == 'mv') {
                                             dirent.remove();
+                                            dirent_list.remove();
                                         }
                                         Common.feedback(msg, 'success');
                                     } else { // failed or canceled
@@ -469,70 +308,14 @@ define([
             return false;
         },
 
-        setFolderPerm: function() {
-            var options = {
-                'obj_name': this.model.get('obj_name'),
-                'dir_path': this.dir.path,
-                'repo_id': this.dir.repo_id
-            };
-            new FolderPermView(options);
-            return false;
-        },
-
-        lockOrUnlockFile: function(params) {
-            var dir = this.dir,
-                filepath = Common.pathJoin([dir.path, this.model.get('obj_name')]),
-                callback = params.after_success;
-
-            $.ajax({
-                url: Common.getUrl({name: 'lock_or_unlock_file', repo_id: dir.repo_id}),
-                type: 'PUT',
-                dataType: 'json',
-                data: {
-                    'operation': params.op,
-                    'p': filepath
-                },
-                cache: false,
-                beforeSend: Common.prepareCSRFToken,
-                success: function() {
-                    callback();
-                },
-                error: function (xhr) {
-                    Common.ajaxErrorHandler(xhr);
-                }
-            });
-        },
-
-        lockFile: function() {
-            var _this = this;
-            this.lockOrUnlockFile({
-                'op': 'lock',
-                'after_success': function() {
-                    _this.model.set({
-                        'is_locked': true,
-                        'locked_by_me': true,
-                        'lock_owner_name': app.pageOptions.name
-                    });
-                    _this.$el.removeClass('hl');
-                }
-            });
-            return false;
-        },
-
-        unlockFile: function() {
-            var _this = this;
-            this.lockOrUnlockFile({
-                'op': 'unlock',
-                'after_success': function() {
-                    _this.model.set({
-                        'is_locked': false
-                    });
-                    _this.$el.removeClass('hl');
-                }
-            });
+        visitDir: function() {
+            this.dirView.dir.reset();
+            // update url & dirents
+            var dir_url = this.$('.dir-link').attr("href");
+            app.router.navigate(dir_url, {trigger: true}); // offer an url fragment
             return false;
         }
     });
 
-    return DirentView;
+    return DirentGridView;
 });

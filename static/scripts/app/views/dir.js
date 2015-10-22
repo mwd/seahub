@@ -9,10 +9,11 @@ define([
     'file-tree',
     'app/collections/dirents',
     'app/views/dirent',
+    'app/views/dirent-grid',
     'app/views/fileupload',
     'app/views/share'
     ], function($, progressbar, magnificPopup, simplemodal, _, Backbone, Common,
-        FileTree, DirentCollection, DirentView, FileUploadView, ShareView) {
+        FileTree, DirentCollection, DirentView, DirentGridView, FileUploadView, ShareView) {
         'use strict';
 
         var DirView = Backbone.View.extend({
@@ -29,9 +30,11 @@ define([
 
             initialize: function(options) {
                 this.$dirent_list = this.$('.repo-file-list tbody');
+                this.$dirent_grid = this.$('.grid-view');
                 this.$path_bar = this.$('.path');
                 // For compatible with css, we use .repo-op instead of .dir-op
                 this.$dir_op_bar = this.$('.repo-op');
+                this.$multi_choose = false;
 
                 this.dir = new DirentCollection();
                 this.listenTo(this.dir, 'add', this.addOne);
@@ -69,6 +72,11 @@ define([
                     }
                 });
 
+                //stop default event when clicking the right mouse button
+                $('.grid-view').bind("contextmenu", function(e) {
+                    return false;
+                });
+
                 // hide 'hidden-op' popup
                 $(document).click(function(e) {
                     var target =  e.target || event.srcElement;
@@ -87,6 +95,52 @@ define([
                                 }
                             });
                         }
+                    }
+                });
+
+                // hide 'grid-hidden-op' popup
+                $(document).click(function(e) {
+                    var target =  e.target || event.srcElement;
+                    var $popup = $('.grid-hidden-op:visible');
+                    if ($popup.length > 0 &&  // There is a visible popup
+                        !$popup.is(target) &&
+                        !$popup.find('*').is(target)) {
+                        $popup.hide();
+                    }
+                });
+
+                //remove hl of other grids
+                $(document).click(function(e) {
+                    var target =  e.target || event.srcElement;
+                    var $grid_view_btn = $('.grid-view-btn');
+                    var $checkedbox = $('td.select .checkbox-checked');
+                    if ( _this.$multi_choose == false &&
+                    e.which == 1 && !$grid_view_btn.is(target) &&
+                    $('.grid-view:visible').length > 0) {
+                        $checkedbox.click();
+                    }   
+                });
+
+                //enable multi-choose when pushing ctrl
+                $(window).keydown(function(e) {
+                    if(e.which == 17) {
+                        _this.$multi_choose = true;
+                    } else {
+                        _this.$multi_choose = false;
+                    }
+                }).keyup(function() {
+                    _this.$multi_choose = false;
+                });
+
+                // hide 'add-menu'
+                $(document).click(function(e) {
+                    var target = e.target || event.srcElement;
+                    var $add_btn = $('#add-new');
+                    var $add_menu = $('#add-menu');
+                    if (!$add_menu.hasClass('hide') &&
+                        !$add_btn.is(target) &&
+                        !$add_menu.is(target)) {
+                        $add_menu.addClass('hide');
                     }
                 });
 
@@ -112,6 +166,7 @@ define([
             showDir: function(category, repo_id, path) {
                 this.$el.show();
                 this.$dirent_list.empty();
+                this.$dirent_grid.empty();
                 var loading_tip = this.$('.loading-tip').show();
                 var dir = this.dir;
                 dir.setPath(category, repo_id, path);
@@ -198,6 +253,9 @@ define([
             addOne: function(dirent) {
                 var view = new DirentView({model: dirent, dirView: this});
                 this.$dirent_list.append(view.render().el);
+                var gview = new DirentGridView({model: dirent, dirView: this});
+                this.$dirent_grid.append(gview.render().el);
+                this.narrowName(gview, '.grid-link-container', '.grid-link');
             },
 
             reset: function() {
@@ -308,10 +366,13 @@ define([
             // Directory Operations
             events: {
                 'click .path-link': 'visitDir',
+                'click #add-new': 'addNew',
                 'click #upload-file': 'uploadFile',
                 'click #add-new-dir': 'newDir',
                 'click #add-new-file': 'newFile',
                 'click #share-cur-dir': 'share',
+                'click #grid-view-btn': 'grid',
+                'click #list-view-btn': 'list',
                 'click th.select': 'select',
                 'click #mv-dirents': 'mv',
                 'click #cp-dirents': 'cp',
@@ -319,6 +380,22 @@ define([
                 'click .by-name': 'sortByName',
                 'click .by-time': 'sortByTime'
             },
+
+            narrowName: function(gview, grid_link_container, grid_link) {
+                var $grid_link_container = gview.render().$el.children(grid_link_container);
+                var $grid_link = $grid_link_container.children(grid_link);
+                while ($grid_link.outerHeight() > $grid_link_container.outerHeight()) {
+                    $grid_link.text($grid_link.text().replace(/(\s)*(.)(\.\.\.)?$/, "..."));
+                };
+            },
+
+             addNew: function() {
+                 this.$('#add-menu').css({
+                     'left': this.$('#add-new').position().left,
+                     'top': parseInt(this.$('.repo-op').css('padding-top')) + this.$('#add-new').outerHeight(true)
+                 }).toggleClass('hide');
+                 return false;
+             },
 
             newDir: function() {
                 var form = $(this.newDirTemplate()),
@@ -436,7 +513,9 @@ define([
                 var dirView = this,
                     dir = this.dir;
                 var view = new DirentView({model: new_dirent, dirView: dirView});
+                var gview = new DirentGridView({model: new_dirent, dirView: dirView});
                 var new_file = view.render().el;
+                var grid_new_file = gview.render().el;
                 // put the new file as the first file
                 if ($('tr', dirView.$dirent_list).length == 0) {
                     dirView.$dirent_list.append(new_file);
@@ -449,12 +528,27 @@ define([
                         $($('tr', dirView.$dirent_list)[dirs.length - 1]).after(new_file);
                     }
                 }
+                if ($('.grid-item', dirView.$dirent_grid).length == 0) {
+                    dirView.$dirent_grid.append(grid_new_file);
+                } else {
+                    var dirs = dir.where({'is_dir':true});
+                    if (dirs.length == 0) {
+                        dirView.$dirent_grid.prepend(grid_new_file);
+                    } else {
+                        // put the new file after the last dir
+                        $($('.grid-item', dirView.$dirent_grid)[dirs.length - 1]).after(grid_new_file);
+                    }
+                }
+                this.narrowName(gview, '.grid-link-container', '.grid-link');
             },
 
             addNewDir: function(new_dirent) {
                 var dirView = this;
                 var view = new DirentView({model: new_dirent, dirView: dirView});
+                var gview = new DirentGridView({model: new_dirent, dirView: dirView});
                 dirView.$dirent_list.prepend(view.render().el); // put the new dir as the first one
+                dirView.$dirent_grid.prepend(gview.render().el); // put the new dir as the first one
+                this.narrowName(gview, '.grid-link-container', '.grid-link');
             },
 
             share: function () {
@@ -470,6 +564,16 @@ define([
                     'obj_name': path == '/' ? dir.repo_name : path.substr(path.lastIndexOf('/') + 1)
                 };
                 new ShareView(options);
+            },
+
+            grid: function() {
+                this.$('.list-view-btn').removeClass('active').siblings().addClass('active');
+                this.$('.repo-file-list').addClass('hide').siblings('.grid-view').removeClass('hide');
+            },
+
+            list: function() {
+                this.$('.list-view-btn').addClass('active').siblings().removeClass('active');
+                this.$('.grid-view').addClass('hide').siblings('.repo-file-list').removeClass('hide');
             },
 
             sortByName: function() {
@@ -532,16 +636,19 @@ define([
 
                 var dir = this.dir;
                 var all_dirent_checkbox = this.$('.checkbox');
+                var all_dirent_grid = this.$('.grid-item .grid-img-container');
                 var $dirents_op = this.$('#multi-dirents-op');
 
                 if (el.hasClass('checkbox-checked')) {
                     all_dirent_checkbox.addClass('checkbox-checked');
+                    all_dirent_grid.addClass('hl');
                     dir.each(function(model) {
                         model.set({'selected': true}, {silent: true});
                     });
                     $dirents_op.css({'display':'inline'});
                 } else {
                     all_dirent_checkbox.removeClass('checkbox-checked');
+                    all_dirent_grid.removeClass('hl');
                     dir.each(function(model) {
                         model.set({'selected': false}, {silent: true});
                     });

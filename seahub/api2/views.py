@@ -1081,7 +1081,7 @@ class UploadLinkView(APIView):
             return api_error(HTTP_520_OPERATION_FAILED, 'Above quota')
 
         token = seafile_api.get_fileserver_access_token(
-            repo_id, 'dummy', 'upload', request.user.username, use_onetime = False)
+            repo_id, 'dummy', 'upload', request.user.username)
         url = gen_file_upload_url(token, 'upload-api')
         return Response(url)
 
@@ -1119,7 +1119,7 @@ class UploadBlksLinkView(APIView):
             return api_error(HTTP_520_OPERATION_FAILED, 'Above quota')
 
         token = seafile_api.get_fileserver_access_token(
-            repo_id, 'dummy', 'upload-blks', request.user.username, use_onetime = False)
+            repo_id, 'dummy', 'upload-blks-api', request.user.username)
         url = gen_file_upload_url(token, 'upload-blks-api')
         return Response(url)
 
@@ -1138,7 +1138,7 @@ class UpdateBlksLinkView(APIView):
             return api_error(HTTP_520_OPERATION_FAILED, 'Above quota')
 
         token = seafile_api.get_fileserver_access_token(
-            repo_id, 'dummy', 'update-blks', request.user.username)
+            repo_id, 'dummy', 'update-blks-api', request.user.username)
         url = gen_file_upload_url(token, 'update-blks-api')
         return Response(url)
 
@@ -1284,7 +1284,7 @@ def get_repo_file(request, repo_id, file_id, file_name, op, use_onetime=True):
             encrypted = repo.encrypted
             enc_version = repo.enc_version
         token = seafile_api.get_fileserver_access_token(
-            repo_id, file_id, op, request.user.username)
+            repo_id, file_id, op, request.user.username, use_onetime=False)
         url = gen_block_get_url(token, None)
         res = {
             'blklist':blklist,

@@ -389,13 +389,13 @@ define([
                 };
             },
 
-             addNew: function() {
-                 this.$('#add-menu').css({
-                     'left': this.$('#add-new').position().left,
-                     'top': parseInt(this.$('.repo-op').css('padding-top')) + this.$('#add-new').outerHeight(true)
-                 }).toggleClass('hide');
-                 return false;
-             },
+            addNew: function() {
+                this.$('#add-menu').css({
+                    'left': this.$('#add-new').position().left,
+                    'top': parseInt(this.$('.repo-op').css('padding-top')) + this.$('#add-new').outerHeight(true)
+                }).toggleClass('hide');
+                return false;
+            },
 
             newDir: function() {
                 var form = $(this.newDirTemplate()),

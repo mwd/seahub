@@ -1269,6 +1269,7 @@ def get_repo_file(request, repo_id, file_id, file_name, op, use_onetime=True):
 
     if op == 'downloadblks':
         blklist = []
+        urllist = []
         encrypted = False
         enc_version = 0
         if file_id != EMPTY_SHA1:
@@ -1283,13 +1284,21 @@ def get_repo_file(request, repo_id, file_id, file_name, op, use_onetime=True):
             repo = get_repo(repo_id)
             encrypted = repo.encrypted
             enc_version = repo.enc_version
-        token = seafile_api.get_fileserver_access_token(
-            repo_id, file_id, op, request.user.username, use_onetime=False)
-        url = gen_block_get_url(token, None)
+
+        res = {}
+        blkurls = []
+        for  blkid in blklist:
+            token = seafile_api.get_fileserver_access_token(
+                repo_id, file_id, op, request.user.username)
+            url = gen_block_get_url(token, blkid)
+            blkurls.append({
+                'id': blkid,
+                'url': url
+            })
         res = {
-            'blklist':blklist,
-            'url':url,
-            'encrypted':encrypted,
+            'oid': file_id,
+            'blkurls': blkurls,
+            'encrypted': encrypted,
             'enc_version': enc_version,
             }
         response = HttpResponse(json.dumps(res), status=200,
